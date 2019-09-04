@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import os
+import json
+import time
+
 import requests
 
 def get_rider_times(pid):
@@ -38,18 +42,31 @@ def get_rider_info(frame):
 
 def main():
 
-    if False:
-        for i in range(1):
-            frame = "A%03d" % (i+1)
-            print (frame)
-            get_rider_info(frame)
+    for group in range(ord('A'), ord('Z')+1):
+        print("processing group", chr(group))
+        failcount = 0
+        for i in range(600):
+            frame = "%s%03d" % (chr(group), (i+1))
 
-    rider_info = get_rider_info("V041")
-    rider_times = None
-    if rider_info:
-        rider_times = get_rider_times(rider_info["pid"])
-    print(rider_info)
-    print(rider_times)
+            if os.path.exists("data/%s.rider" % frame):
+                continue
+
+            rider_info = get_rider_info(frame)
+            if rider_info is None:
+                failcount += 1
+                if failcount >= 20:
+                    break
+                else:
+                    continue
+
+            failcount = 0
+            rider_times = get_rider_times(rider_info["pid"])
+            with open("data/%s.rider" % frame, "w") as f:
+                f.write(json.dumps(rider_info))
+            with open("data/%s.time" % frame, "w") as f:
+                f.write(json.dumps(rider_times))
+            time.sleep(0.5)
+
 
 if __name__ == "__main__":
     main()
